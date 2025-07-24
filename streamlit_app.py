@@ -65,8 +65,9 @@ st.caption("Type your question about your database and get a SQL query suggestio
 
 
 
+
 # Use Hugging Face Inference API for SQL generation
-HF_API_KEY = "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"
+HF_API_KEY = st.secrets["HF_API_KEY"]
 HF_API_URL = "https://api-inference.huggingface.co/models/chatdb/natural-sql-7b"
 
 def query_hf_api(prompt, api_key=HF_API_KEY):
