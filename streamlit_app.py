@@ -1,3 +1,4 @@
+
 import streamlit as st
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -64,6 +65,7 @@ st.caption("Type your question about your database and get a SQL query suggestio
 
 
 # Cache the model and tokenizer to avoid reloading on every rerun
+
 @st.cache_resource(show_spinner=True)
 def load_model():
     tokenizer = AutoTokenizer.from_pretrained("chatdb/natural-sql-7b")
