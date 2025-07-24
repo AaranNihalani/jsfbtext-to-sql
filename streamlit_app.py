@@ -7,13 +7,14 @@ import streamlit as st
 # Sidebar with model info, instructions, and editable schema
 with st.sidebar:
     st.image("https://huggingface.co/front/assets/huggingface_logo-noborder.svg", width=120)
-    st.markdown("## Natural SQL Chatbot")
+    st.markdown("## Natural Text to SQL Chatbot (Lightweight)")
     st.markdown(
-        "This chatbot uses the [chatdb/natural-sql-7b](https://huggingface.co/chatdb/natural-sql-7b) model to generate SQL queries from natural language.\n"
+        "This chatbot uses the [google/flan-t5-base](https://huggingface.co/google/flan-t5-base) model to generate SQL queries from natural language.\n"
         "\n**Instructions:**\n"
-        "- Ask a question in natural language about your database.\n"
+        "- Ask a clear question about your database.\n"
         "- The model will generate a SQL query as a response.\n"
-        "\n**Model:** chatdb/natural-sql-7b (runs locally)\n"
+        "- For best results, specify table and column names as they appear in the schema.\n"
+        "\n**Model:** google/flan-t5-base (lightweight, runs anywhere)\n"
         "\n**Powered by:** [Hugging Face Transformers](https://huggingface.co/docs/transformers)"
     )
     st.markdown("---")
@@ -66,18 +67,14 @@ st.caption("Type your question about your database and get a SQL query suggestio
 
 
 
-# Use transformers to run the model locally
+# Use transformers to run the model locally (flan-t5-base is encoder-decoder)
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 @st.cache_resource(show_spinner=True)
 def load_model():
-    tokenizer = AutoTokenizer.from_pretrained("chatdb/natural-sql-7b")
-    model = AutoModelForCausalLM.from_pretrained(
-        "chatdb/natural-sql-7b",
-        device_map="auto",
-        torch_dtype=torch.float16,
-    )
+    tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-base")
+    model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-base")
     return tokenizer, model
 
 tokenizer, model = load_model()
@@ -85,7 +82,7 @@ tokenizer, model = load_model()
 def query_hf_api(prompt):
     inputs = tokenizer(prompt, return_tensors="pt")
     with torch.no_grad():
-        outputs = model.generate(**inputs, max_new_tokens=256)
+        outputs = model.generate(**inputs, max_new_tokens=128)
     return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 
@@ -112,22 +109,21 @@ if prompt:
     with st.chat_message("user"):
         st.markdown(f"<div style='color:#1a73e8;font-weight:bold;'>You:</div> {prompt}", unsafe_allow_html=True)
 
-    # Format the prompt as in your Colab testing
-    formatted_prompt = f'''
-# Task
-Generate a SQL query to answer the following question: `{prompt}`
+    # Highly accurate prompt for flan-t5-base
+    formatted_prompt = f"""
+You are an expert SQL developer. Given the following database schema and a natural language question, write the correct, syntactically valid PostgreSQL SQL query to answer the question. Only output the SQL query, nothing else.
 
-### PostgreSQL Database Schema
-The query will run on a database with the following schema:
+Schema:
+{schema}
 
-`{schema}`
+Question:
+{prompt}
 
-# SQL
-Here is the SQL query that answers the question: `{prompt}`
-```sql'''
+SQL:
+"""
 
     with st.chat_message("assistant"):
-        with st.spinner("Generating SQL query locally with chatdb/natural-sql-7b..."):
+        with st.spinner("Generating SQL query locally with google/flan-t5-base..."):
             try:
                 output = query_hf_api(formatted_prompt)
                 # Extract SQL from output
