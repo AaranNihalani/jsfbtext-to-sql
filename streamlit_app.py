@@ -1,10 +1,6 @@
 
 import streamlit as st
 
-
-# Use huggingface_hub for direct inference
-from huggingface_hub import InferenceClient
-
 # Show title and description.
 
 
