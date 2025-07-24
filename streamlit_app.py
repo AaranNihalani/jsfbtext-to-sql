@@ -1,7 +1,7 @@
 
 import streamlit as st
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+
+import requests
 
 # Show title and description.
 
@@ -64,20 +64,26 @@ st.title("🗃️ Natural Language to SQL Chatbot")
 st.caption("Type your question about your database and get a SQL query suggestion.")
 
 
-# Cache the model and tokenizer to avoid reloading on every rerun
 
+# Use Hugging Face Inference API for SQL generation
+HF_API_KEY = "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"
+HF_API_URL = "https://api-inference.huggingface.co/models/chatdb/natural-sql-7b"
 
-@st.cache_resource(show_spinner=True)
-def load_model():
-    tokenizer = AutoTokenizer.from_pretrained("chatdb/natural-sql-7b")
-    model = AutoModelForCausalLM.from_pretrained(
-        "chatdb/natural-sql-7b",
-        device_map="auto",
-        torch_dtype=torch.float16,
-    )
-    return tokenizer, model
-
-tokenizer, model = load_model()
+def query_hf_api(prompt, api_key=HF_API_KEY):
+    headers = {"Authorization": f"Bearer {api_key}"}
+    payload = {"inputs": prompt}
+    response = requests.post(HF_API_URL, headers=headers, json=payload, timeout=120)
+    response.raise_for_status()
+    result = response.json()
+    # The output may be a list of dicts or a dict with 'generated_text'
+    if isinstance(result, list) and 'generated_text' in result[0]:
+        return result[0]['generated_text']
+    elif isinstance(result, dict) and 'generated_text' in result:
+        return result['generated_text']
+    elif isinstance(result, list) and 'output' in result[0]:
+        return result[0]['output']
+    else:
+        return str(result)
 
 
 # Session state for chat history
@@ -118,19 +124,13 @@ Here is the SQL query that answers the question: `{prompt}`
 ```sql'''
 
     with st.chat_message("assistant"):
-        with st.spinner("Generating SQL query..."):
-            inputs = tokenizer(formatted_prompt, return_tensors="pt").to(model.device)
-            generated_ids = model.generate(
-                **inputs,
-                num_return_sequences=1,
-                eos_token_id=100001,
-                pad_token_id=100001,
-                max_new_tokens=400,
-                do_sample=False,
-                num_beams=1,
-            )
-            outputs = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
-            # Extract SQL from output
-            sql = outputs[0].split("```sql")[-1].strip()
-            st.markdown(f"<div style='color:#e37400;font-weight:bold;'>SQLBot:</div> <pre>{sql}</pre>", unsafe_allow_html=True)
+        with st.spinner("Generating SQL query via Hugging Face API..."):
+            try:
+                output = query_hf_api(formatted_prompt)
+                # Extract SQL from output
+                sql = output.split("```sql")[-1].strip()
+                st.markdown(f"<div style='color:#e37400;font-weight:bold;'>SQLBot:</div> <pre>{sql}</pre>", unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"Error from Hugging Face API: {e}")
+                sql = ""
     st.session_state.messages.append({"role": "assistant", "content": sql})
