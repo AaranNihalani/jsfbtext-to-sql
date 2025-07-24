@@ -1,7 +1,9 @@
 
 import streamlit as st
 
-import requests
+
+# Use huggingface_hub for direct inference
+from huggingface_hub import InferenceClient
 
 # Show title and description.
 
@@ -11,11 +13,11 @@ with st.sidebar:
     st.image("https://huggingface.co/front/assets/huggingface_logo-noborder.svg", width=120)
     st.markdown("## Natural SQL Chatbot")
     st.markdown(
-        "This chatbot uses the [chatdb/natural-sql-7b](https://huggingface.co/chatdb/natural-sql-7b) model to generate SQL queries from natural language.\n"
+        "This chatbot uses the [Qwen/Qwen1.5-0.5B-Chat](https://huggingface.co/Qwen/Qwen1.5-0.5B-Chat) model to generate SQL queries from natural language.\n"
         "\n**Instructions:**\n"
         "- Ask a question in natural language about your database.\n"
         "- The model will generate a SQL query as a response.\n"
-        "\n**Model:** chatdb/natural-sql-7b\n"
+        "\n**Model:** Qwen1.5-0.5B-Chat\n"
         "\n**Powered by:** [Hugging Face Transformers](https://huggingface.co/docs/transformers)"
     )
     st.markdown("---")
@@ -66,25 +68,17 @@ st.caption("Type your question about your database and get a SQL query suggestio
 
 
 
-# Use Hugging Face Inference API for SQL generation
+
+# Use huggingface_hub InferenceClient for model inference
+
+# Use the original NaturalSQL model (chatdb/natural-sql-7b)
 HF_API_KEY = st.secrets["HF_API_KEY"]
-HF_API_URL = "https://api-inference.huggingface.co/models/chatdb/natural-sql-7b"
+MODEL_ID = "chatdb/natural-sql-7b"
+client = InferenceClient(model=MODEL_ID, token=HF_API_KEY)
 
 def query_hf_api(prompt, api_key=HF_API_KEY):
-    headers = {"Authorization": f"Bearer {api_key}"}
-    payload = {"inputs": prompt}
-    response = requests.post(HF_API_URL, headers=headers, json=payload, timeout=120)
-    response.raise_for_status()
-    result = response.json()
-    # The output may be a list of dicts or a dict with 'generated_text'
-    if isinstance(result, list) and 'generated_text' in result[0]:
-        return result[0]['generated_text']
-    elif isinstance(result, dict) and 'generated_text' in result:
-        return result['generated_text']
-    elif isinstance(result, list) and 'output' in result[0]:
-        return result[0]['output']
-    else:
-        return str(result)
+    # The InferenceClient returns a string output directly
+    return client.text_generation(prompt, max_new_tokens=256, temperature=0.2)
 
 
 # Session state for chat history
