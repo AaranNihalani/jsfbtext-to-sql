@@ -1,56 +1,133 @@
 import streamlit as st
-from openai import OpenAI
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # Show title and description.
-st.title("💬 Chatbot")
-st.write(
-    "This is a simple chatbot that uses OpenAI's GPT-3.5 model to generate responses. "
-    "To use this app, you need to provide an OpenAI API key, which you can get [here](https://platform.openai.com/account/api-keys). "
-    "You can also learn how to build this app step by step by [following our tutorial](https://docs.streamlit.io/develop/tutorials/llms/build-conversational-apps)."
-)
 
-# Ask user for their OpenAI API key via `st.text_input`.
-# Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
-# via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
-openai_api_key = st.text_input("OpenAI API Key", type="password")
-if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.", icon="🗝️")
-else:
 
-    # Create an OpenAI client.
-    client = OpenAI(api_key=openai_api_key)
+# Sidebar with model info, instructions, and editable schema
+with st.sidebar:
+    st.image("https://huggingface.co/front/assets/huggingface_logo-noborder.svg", width=120)
+    st.markdown("## Natural SQL Chatbot")
+    st.markdown(
+        "This chatbot uses the [chatdb/natural-sql-7b](https://huggingface.co/chatdb/natural-sql-7b) model to generate SQL queries from natural language.\n"
+        "\n**Instructions:**\n"
+        "- Ask a question in natural language about your database.\n"
+        "- The model will generate a SQL query as a response.\n"
+        "\n**Model:** chatdb/natural-sql-7b\n"
+        "\n**Powered by:** [Hugging Face Transformers](https://huggingface.co/docs/transformers)"
+    )
+    st.markdown("---")
+    st.markdown("### Database Schema (editable)")
+    default_schema = '''
+CREATE TABLE users (
+        user_id SERIAL PRIMARY KEY,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+CREATE TABLE projects (
+    project_id SERIAL PRIMARY KEY,
+    project_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    start_date DATE,
+    end_date DATE,
+    owner_id INTEGER REFERENCES users(user_id)
+);
+CREATE TABLE tasks (
+    task_id SERIAL PRIMARY KEY,
+    task_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    due_date DATE,
+    status VARCHAR(50),
+    project_id INTEGER REFERENCES projects(project_id)
+);
+CREATE TABLE taskassignments (
+    assignment_id SERIAL PRIMARY KEY,
+    task_id INTEGER REFERENCES tasks(task_id),
+    user_id INTEGER REFERENCES users(user_id),
+    assigned_date DATE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE comments (
+    comment_id SERIAL PRIMARY KEY,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    task_id INTEGER REFERENCES tasks(task_id),
+    user_id INTEGER REFERENCES users(user_id)
+);
+'''
+    schema = st.text_area("Edit the schema as needed:", value=default_schema, height=300)
 
-    # Create a session state variable to store the chat messages. This ensures that the
-    # messages persist across reruns.
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+st.title("🗃️ Natural Language to SQL Chatbot")
+st.caption("Type your question about your database and get a SQL query suggestion.")
 
-    # Display the existing chat messages via `st.chat_message`.
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
 
-    # Create a chat input field to allow the user to enter a message. This will display
-    # automatically at the bottom of the page.
-    if prompt := st.chat_input("What is up?"):
+# Cache the model and tokenizer to avoid reloading on every rerun
+@st.cache_resource(show_spinner=True)
+def load_model():
+    tokenizer = AutoTokenizer.from_pretrained("chatdb/natural-sql-7b")
+    model = AutoModelForCausalLM.from_pretrained(
+        "chatdb/natural-sql-7b",
+        device_map="auto",
+        torch_dtype=torch.float16,
+    )
+    return tokenizer, model
 
-        # Store and display the current prompt.
-        st.session_state.messages.append({"role": "user", "content": prompt})
+tokenizer, model = load_model()
+
+
+# Session state for chat history
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+
+# Display chat history with better formatting
+for message in st.session_state.messages:
+    if message["role"] == "user":
         with st.chat_message("user"):
-            st.markdown(prompt)
-
-        # Generate a response using the OpenAI API.
-        stream = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages
-            ],
-            stream=True,
-        )
-
-        # Stream the response to the chat using `st.write_stream`, then store it in 
-        # session state.
+            st.markdown(f"<div style='color:#1a73e8;font-weight:bold;'>You:</div> {message['content']}", unsafe_allow_html=True)
+    else:
         with st.chat_message("assistant"):
-            response = st.write_stream(stream)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+            st.markdown(f"<div style='color:#e37400;font-weight:bold;'>SQLBot:</div> {message['content']}", unsafe_allow_html=True)
+
+
+
+# Chat input at the bottom
+promptText = st.chat_input("Ask a question about your database (e.g. 'Show me all users who signed up in July')...")
+if promptText:
+    st.session_state.messages.append({"role": "user", "content": promptText})
+    with st.chat_message("user"):
+        st.markdown(f"<div style='color:#1a73e8;font-weight:bold;'>You:</div> {promptText}", unsafe_allow_html=True)
+
+    # Format the prompt as in your Colab testing
+    prompt = f'''
+# Task
+Generate a SQL query to answer the following question: `{promptText}`
+
+### PostgreSQL Database Schema
+The query will run on a database with the following schema:
+
+`{schema}`
+
+# SQL
+Here is the SQL query that answers the question: `{promptText}`
+```sql'''
+
+    with st.chat_message("assistant"):
+        with st.spinner("Generating SQL query..."):
+            inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+            generated_ids = model.generate(
+                **inputs,
+                num_return_sequences=1,
+                eos_token_id=100001,
+                pad_token_id=100001,
+                max_new_tokens=400,
+                do_sample=False,
+                num_beams=1,
+            )
+            outputs = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+            # Extract SQL from output
+            sql = outputs[0].split("```sql")[-1].strip()
+            st.markdown(f"<div style='color:#e37400;font-weight:bold;'>SQLBot:</div> <pre>{sql}</pre>", unsafe_allow_html=True)
+    st.session_state.messages.append({"role": "assistant", "content": sql})
