@@ -13,11 +13,11 @@ with st.sidebar:
     st.image("https://huggingface.co/front/assets/huggingface_logo-noborder.svg", width=120)
     st.markdown("## Natural SQL Chatbot")
     st.markdown(
-        "This chatbot uses the [Qwen/Qwen1.5-0.5B-Chat](https://huggingface.co/Qwen/Qwen1.5-0.5B-Chat) model to generate SQL queries from natural language.\n"
+        "This chatbot uses the [chatdb/natural-sql-7b](https://huggingface.co/chatdb/natural-sql-7b) model to generate SQL queries from natural language.\n"
         "\n**Instructions:**\n"
         "- Ask a question in natural language about your database.\n"
         "- The model will generate a SQL query as a response.\n"
-        "\n**Model:** Qwen1.5-0.5B-Chat\n"
+        "\n**Model:** chatdb/natural-sql-7b (runs locally)\n"
         "\n**Powered by:** [Hugging Face Transformers](https://huggingface.co/docs/transformers)"
     )
     st.markdown("---")
@@ -69,16 +69,28 @@ st.caption("Type your question about your database and get a SQL query suggestio
 
 
 
-# Use huggingface_hub InferenceClient for model inference
 
-# Use the original NaturalSQL model (chatdb/natural-sql-7b)
-HF_API_KEY = st.secrets["HF_API_KEY"]
-MODEL_ID = "chatdb/natural-sql-7b"
-client = InferenceClient(model=MODEL_ID, token=HF_API_KEY)
+# Use transformers to run the model locally
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
-def query_hf_api(prompt, api_key=HF_API_KEY):
-    # The InferenceClient returns a string output directly
-    return client.text_generation(prompt, max_new_tokens=256, temperature=0.2)
+@st.cache_resource(show_spinner=True)
+def load_model():
+    tokenizer = AutoTokenizer.from_pretrained("chatdb/natural-sql-7b")
+    model = AutoModelForCausalLM.from_pretrained(
+        "chatdb/natural-sql-7b",
+        device_map="auto",
+        torch_dtype=torch.float16,
+    )
+    return tokenizer, model
+
+tokenizer, model = load_model()
+
+def query_hf_api(prompt):
+    inputs = tokenizer(prompt, return_tensors="pt")
+    with torch.no_grad():
+        outputs = model.generate(**inputs, max_new_tokens=256)
+    return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 
 # Session state for chat history
@@ -119,7 +131,7 @@ Here is the SQL query that answers the question: `{prompt}`
 ```sql'''
 
     with st.chat_message("assistant"):
-        with st.spinner("Generating SQL query via Hugging Face API..."):
+        with st.spinner("Generating SQL query locally with chatdb/natural-sql-7b..."):
             try:
                 output = query_hf_api(formatted_prompt)
                 # Extract SQL from output
