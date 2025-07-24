@@ -1,2 +1,3 @@
 streamlit
-openai
+transformers==4.35.2
+torch
