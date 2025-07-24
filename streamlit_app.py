@@ -66,6 +66,7 @@ st.caption("Type your question about your database and get a SQL query suggestio
 
 # Cache the model and tokenizer to avoid reloading on every rerun
 
+
 @st.cache_resource(show_spinner=True)
 def load_model():
     tokenizer = AutoTokenizer.from_pretrained("chatdb/natural-sql-7b")
@@ -96,16 +97,16 @@ for message in st.session_state.messages:
 
 
 # Chat input at the bottom
-promptText = st.chat_input("Ask a question about your database (e.g. 'Show me all users who signed up in July')...")
-if promptText:
-    st.session_state.messages.append({"role": "user", "content": promptText})
+prompt = st.chat_input("Ask a question about your database (e.g. 'Show me all users who signed up in July')...")
+if prompt:
+    st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
-        st.markdown(f"<div style='color:#1a73e8;font-weight:bold;'>You:</div> {promptText}", unsafe_allow_html=True)
+        st.markdown(f"<div style='color:#1a73e8;font-weight:bold;'>You:</div> {prompt}", unsafe_allow_html=True)
 
     # Format the prompt as in your Colab testing
-    prompt = f'''
+    formatted_prompt = f'''
 # Task
-Generate a SQL query to answer the following question: `{promptText}`
+Generate a SQL query to answer the following question: `{prompt}`
 
 ### PostgreSQL Database Schema
 The query will run on a database with the following schema:
@@ -113,12 +114,12 @@ The query will run on a database with the following schema:
 `{schema}`
 
 # SQL
-Here is the SQL query that answers the question: `{promptText}`
+Here is the SQL query that answers the question: `{prompt}`
 ```sql'''
 
     with st.chat_message("assistant"):
         with st.spinner("Generating SQL query..."):
-            inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+            inputs = tokenizer(formatted_prompt, return_tensors="pt").to(model.device)
             generated_ids = model.generate(
                 **inputs,
                 num_return_sequences=1,
