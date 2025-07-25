@@ -1,5 +1,7 @@
 streamlit
-transformers
+streamlit
 torch
+transformers
+accelerate
 sentencepiece
-sql-formatter
+Flask
