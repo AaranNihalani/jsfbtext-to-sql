@@ -1,8 +1,9 @@
 streamlit
-streamlit
 torch
 transformers
 accelerate
 sentencepiece
 Flask
 toml
+llama-cpp-python
+pyngrok
