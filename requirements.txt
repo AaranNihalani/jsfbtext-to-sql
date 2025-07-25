@@ -1,4 +1,5 @@
 streamlit
-transformers==4.35.2
+transformers
 torch
-accelerate
+sentencepiece
+sql-formatter
