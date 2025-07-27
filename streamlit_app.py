@@ -16,7 +16,7 @@ st.write("Powered by `defog/sqlcoder-7b-2`. Ask a question in plain English, and
 with st.sidebar:
     st.header("API Configuration")
     api_url = st.text_input("API URL", value="", placeholder="Paste the ngrok URL here")
-    st.info("The database schema is now managed by the API.")
+    st.info("The database being used is the Kaggle Bike Store Relational Database")
 
 # --- Chat Interface ---
 if "messages" not in st.session_state:
