@@ -1,6 +1,9 @@
 
 import streamlit as st
 import requests
+import pandas as pd
+import sqlparse
+from db_utils import create_db_engine, DB_NAME
 
 st.set_page_config(layout="wide", page_title="SQL Coder", page_icon="🤖")
 
@@ -41,7 +44,23 @@ if prompt := st.chat_input("Your question"):
                 response = requests.post(f"{api_url}/generate-sql", json={"question": prompt})
                 response.raise_for_status()  # Raise an exception for bad status codes
                 sql_query = response.json()["sql"]
-                st.code(sql_query, language='sql')
-                st.session_state.messages.append({"role": "assistant", "content": sql_query})
+                formatted_sql = sqlparse.format(sql_query, reindent=True, keyword_case='upper')
+                st.code(formatted_sql, language='sql')
+                st.session_state.messages.append({"role": "assistant", "content": formatted_sql})
+                st.session_state.last_query = sql_query
+
             except requests.exceptions.RequestException as e:
                 st.error(f"Error connecting to the API: {e}")
+
+if "last_query" in st.session_state and st.session_state.last_query:
+    if st.button("Run Query"):
+        try:
+            engine = create_db_engine()
+            if engine:
+                with engine.connect() as connection:
+                    df = pd.read_sql(st.session_state.last_query, connection)
+                    st.dataframe(df)
+            else:
+                st.error("Could not connect to the database.")
+        except Exception as e:
+            st.error(f"Error executing query: {e}")

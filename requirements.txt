@@ -10,6 +10,7 @@ pyngrok
 pandas
 sqlalchemy
 mysql-connector-python
+sqlparse
 pandas
 sqlalchemy
 mysql-connector-python
