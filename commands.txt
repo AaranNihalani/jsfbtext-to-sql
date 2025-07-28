@@ -8,4 +8,4 @@ mysql -u root -p
 .venv/bin/python api.py
 
 # To start the streamlit app
-.venv/bin/streamlit run streamlit_app.py
+streamlit run streamlit_app.py
