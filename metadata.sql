@@ -6,4 +6,4 @@ CREATE TABLE orders (order_id int, customer_id int, order_status int, order_date
 CREATE TABLE products (product_id int, product_name varchar(100), brand_id int, category_id int, model_year date, list_price float);
 CREATE TABLE staffs (staff_id int primary key, first_name text, last_name text, email varchar(100),phone int,actives int, store_id int, manager_id int);
 CREATE TABLE stocks (store_id int primary key, product_id int, quantity int);
-CREATE TABLE stores (store_id int primary key, store_name text, phone int,  email varchar(100), street varchar(100),  city text, state text, zip_code int);
+CREATE TABLE stores (store_id int primary key, store_name text, phone VARCHAR(25),  email varchar(100), street varchar(100),  city text, state text, zip_code int);

@@ -30,6 +30,8 @@ def generate_prompt(question, prompt_file="prompt.md", metadata_file="metadata.s
     )
     return prompt
 
+
+
 @app.route('/generate-sql', methods=['POST'])
 def generate_sql():
     data = request.get_json()
@@ -51,6 +53,8 @@ def generate_sql():
     # The model sometimes includes the stop token in the output, so we remove it
     if sql_query.endswith("[/SQL]"):
         sql_query = sql_query[:-6].strip()
+    if sql_query.endswith("[SQL]"):
+        sql_query = sql_query[:-5].strip()
 
     return jsonify({'sql': sql_query})
 

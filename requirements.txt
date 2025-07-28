@@ -7,3 +7,9 @@ Flask
 toml
 llama-cpp-python
 pyngrok
+pandas
+sqlalchemy
+mysql-connector-python
+pandas
+sqlalchemy
+mysql-connector-python
