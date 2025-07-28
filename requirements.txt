@@ -2,15 +2,12 @@ streamlit
 torch
 transformers
 accelerate
-sentencepiece
 Flask
 toml
-llama-cpp-python
 pyngrok
 pandas
 sqlalchemy
 mysql-connector-python
 sqlparse
-pandas
-sqlalchemy
-mysql-connector-python
+sentencepiece
+llama-cpp-python
