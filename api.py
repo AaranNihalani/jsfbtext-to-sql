@@ -50,7 +50,7 @@ def generate_sql():
     )
 
     sql_query = output["choices"][0]["text"].strip()
-    sql_query = sql_query.replace("NULLS LAST", "")
+    sql_query = sql_query.replace(" NULLS LAST", "")
     # The model sometimes includes the stop token in the output, so we remove it
     if sql_query.endswith("[/SQL]"):
         sql_query = sql_query[:-6].strip()
