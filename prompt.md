@@ -6,6 +6,8 @@ Instructions
 - The query must start with `SELECT`.
 - Round any numerical results to 2 decimal places.
 - Use descriptive and human-readable column aliases.
+- `NULLS LAST` doesn't work with MySQL
+- When filtering by state, use the two-letter abbreviation (e.g., 'New York' should be 'NY', 'California' should be 'CA', 'Texas' should be 'TX').
 - Do not add any markdown formatting (e.g., ```sql) to the query.
 - If you cannot answer the question with the available database schema, return 'I do not know'.
 
