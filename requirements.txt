@@ -1,5 +1,5 @@
 streamlit
-sql-formatter
+sqlparse
 torch
 transformers
 accelerate
