@@ -1,4 +1,5 @@
 streamlit
+sqlparse
 torch
 transformers
 accelerate
@@ -8,6 +9,5 @@ pyngrok
 pandas
 sqlalchemy
 mysql-connector-python
-sqlparse
 sentencepiece
 llama-cpp-python
