@@ -2,13 +2,10 @@
 import streamlit as st
 import requests
 import pandas as pd
-import sqlparse
+from sql_formatter.core import format_sql
 from db_utils import create_db_engine, DB_NAME
 
 st.set_page_config(layout="wide", page_title="SQL Coder", page_icon="🤖")
-
-
-
 
 
 # --- Main App ---
@@ -44,7 +41,7 @@ if prompt := st.chat_input("Your question"):
                 response = requests.post(f"{api_url}/generate-sql", json={"question": prompt})
                 response.raise_for_status()  # Raise an exception for bad status codes
                 sql_query = response.json()["sql"]
-                formatted_sql = sqlparse.format(sql_query, reindent=True, keyword_case='upper')
+                formatted_sql = format_sql(sql_query)
                 st.code(formatted_sql, language='sql')
                 st.session_state.messages.append({"role": "assistant", "content": formatted_sql})
                 st.session_state.last_query = sql_query
