@@ -9,7 +9,7 @@ Instructions
 - `NULLS LAST` doesn't work with MySQL
 - When filtering by state, use the two-letter abbreviation (e.g., 'New York' should be 'NY', 'California' should be 'CA', 'Texas' should be 'TX').
 - Do not add any markdown formatting (e.g., ```sql) to the query.
-- Check that all columns queried are in the right tables in the schema
+- Check that all columns queried are in the right tables in the schema (e.g. do not try stocks.store_name, be careful)
 - If you cannot answer the question with the available database schema, return 'I do not know'.
 
 Database Schema

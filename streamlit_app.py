@@ -50,14 +50,13 @@ if prompt := st.chat_input("Your question"):
                 st.error(f"Error connecting to the API: {e}")
 
 if "last_query" in st.session_state and st.session_state.last_query:
-    if st.button("Run Query"):
-        try:
-            engine = create_db_engine()
-            if engine:
-                with engine.connect() as connection:
-                    df = pd.read_sql(st.session_state.last_query, connection)
-                    st.dataframe(df)
-            else:
-                st.error("Could not connect to the database.")
-        except Exception as e:
-            st.error(f"Error executing query: {e}")
+    try:
+        engine = create_db_engine()
+        if engine:
+            with engine.connect() as connection:
+                df = pd.read_sql(st.session_state.last_query, connection)
+                st.dataframe(df)
+        else:
+            st.error("Could not connect to the database.")
+    except Exception as e:
+        st.error(f"Error executing query: {e}")
