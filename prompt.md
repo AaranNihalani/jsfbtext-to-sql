@@ -10,6 +10,7 @@ Instructions
 - When filtering by state, use the two-letter abbreviation (e.g., 'New York' should be 'NY', 'California' should be 'CA', 'Texas' should be 'TX').
 - Do not add any markdown formatting (e.g., ```sql) to the query.
 - Check that all columns queried are in the right tables in the schema (e.g. do not try stocks.store_name, be careful)
+- Never try a column that doesn't exist, you should make sure to never make this mistake
 - If you cannot answer the question with the available database schema, return 'I do not know'.
 
 Database Schema

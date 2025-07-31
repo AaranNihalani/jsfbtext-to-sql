@@ -56,6 +56,24 @@ if "last_query" in st.session_state and st.session_state.last_query:
             with engine.connect() as connection:
                 df = pd.read_sql(st.session_state.last_query, connection)
                 st.dataframe(df)
+
+                # Add a section for data analysis
+                with st.expander("View Analysis"):
+                    with st.spinner("Generating analysis..."):
+                        try:
+                            analysis_response = requests.post(f"{api_url}/analyze", json={
+                                "question": st.session_state.messages[-2]['content'],
+                                "sql_query": st.session_state.last_query,
+                                "table_data": df.to_string()
+                            })
+                            analysis_response.raise_for_status()
+                            analysis = analysis_response.json()["analysis"]
+                            st.markdown(analysis)
+                        except requests.exceptions.RequestException as e:
+                            st.error(f"Error connecting to the analysis API: {e}")
+                        except Exception as e:
+                            st.error(f"Error during analysis: {e}")
+
         else:
             st.error("Could not connect to the database.")
     except Exception as e:

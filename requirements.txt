@@ -11,4 +11,3 @@ sqlalchemy
 mysql-connector-python
 sentencepiece
 llama-cpp-python
-peft
